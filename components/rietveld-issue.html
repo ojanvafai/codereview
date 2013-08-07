@@ -1,0 +1,13 @@
+<polymer-element name="rietveld-issue" attributes="number">
+  <template>
+    <span>I'm <b>rietveld-issue</b> number {{number}}</span>
+  </template>
+  <script>
+  Polymer('rietveld-issue', {
+    number: null,
+    numberChanged: function() {
+      // Fetch the number.
+    },
+  });
+  </script>
+</polymer-element>
