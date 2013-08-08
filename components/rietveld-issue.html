@@ -6,8 +6,39 @@
   Polymer('rietveld-issue', {
     number: null,
     numberChanged: function() {
-      // Fetch the number.
+      rietveld.issue(this.number).then(function (value) {
+        console.log(value);
+      });
     },
   });
   </script>
 </polymer-element>
+<script>
+var rietveld = {};
+
+(function() {
+
+// A simple Promise-based wrapper for XHR.
+function fetch(url) {
+  return new Promise(function(resolver) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.send();
+    xhr.addEventListener('load', function() {
+      resolver.resolve(JSON.parse(xhr.responseText));
+    });
+    xhr.addEventListener('error', function() {
+      resolver.reject();
+    });
+  });
+}
+
+rietveld.kInstance = 'https://codereview.chromium.org/';
+rietveld.kAPI = rietveld.kInstance + 'api/'
+
+rietveld.issue = function(number) {
+  return fetch(rietveld.kAPI + number);
+};
+
+})();
+</script>
