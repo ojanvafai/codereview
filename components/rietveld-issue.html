@@ -1,6 +1,10 @@
 <polymer-element name="rietveld-issue" attributes="number">
   <template>
-    <span>I'm <b>rietveld-issue</b> number {{number}}</span>
+    <template bind="{{ data }}">
+      <div>{{ subject }}</div>
+      <div><b>Description:</b></div>
+      <div>{{ description }}</div>
+    </template>
   </template>
   <script>
   Polymer('rietveld-issue', {
@@ -8,7 +12,8 @@
     numberChanged: function() {
       rietveld.issue(this.number).then(function (value) {
         console.log(value);
-      });
+        this.data = value;
+      }.bind(this));
     },
   });
   </script>
