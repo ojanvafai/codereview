@@ -10,10 +10,36 @@
         on-polymer-response="issueLoadSucceeded"
         on-polymer-error="issueLoadFailed">
     </polymer-ajax>
+    <style>
+    .description {
+      white-space: pre;
+    }
+    </style>
 
     <template if="{{ issue }}">
-      <h1>{{ issue.subject }}</h1>
-      <p>{{ issue.description }}</p>
+      <h1 class="subject">{{ issue.subject }}</h1>
+      <div class="description">{{ issue.description }}</div>
+      <div class="recipients">
+        <div class="reviewers">
+          <template repeat="{{ issue.reviewers }}">
+            <span class="email">{{ }}</span>
+          </template>
+        </div>
+        <div class="cc">
+          <template repeat="{{ issue.cc }}">
+            <span class="email">{{ }}</span>
+          </template>
+        </div>
+      </div>
+      <label>Closed: <input type="checkbox" checked="{{ issue.closed }}"></label>
+      <label>Commit: <input type="checkbox" checked="{{ issue.commit }}"></label>
+      <label>Private: <input type="checkbox" checked="{{ issue.private }}"></label>
+      <div class="created">{{ issue.created }}</div>
+      <div class="modified">{{ issue.modified }}</div>
+      <div class="owner"><span class="name">{{ issue.owner }}</span><span class="email">{{ issue.owner_email }}</span></div>
+      <template repeat="{{ issue.patchsets }}">
+        <rietveld-patchset id="{{ }}"></rietveld-patchset>
+      </template>
     </template>
 
     <template if="{{ error }}">
