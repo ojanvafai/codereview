@@ -15,28 +15,28 @@
       white-space: pre;
     }
     </style>
-    <template if="{{ issue }}">
-      <h1 class="subject">{{ issue.subject }}</h1>
-      <div class="description">{{ issue.description }}</div>
+    <template if="{{ data }}">
+      <h1 class="subject">{{ data.subject }}</h1>
+      <div class="description">{{ data.description }}</div>
       <div class="recipients">
         <div class="reviewers">
-          <template repeat="{{ email in issue.reviewers }}">
+          <template repeat="{{ email in data.reviewers }}">
             <span class="email">{{ email }}</span>
           </template>
         </div>
         <div class="cc">
-          <template repeat="{{ email in issue.cc }}">
+          <template repeat="{{ email in data.cc }}">
             <span class="email">{{ email }}</span>
           </template>
         </div>
       </div>
-      <label>Closed: <input type="checkbox" checked="{{ issue.closed }}"></label>
-      <label>Commit: <input type="checkbox" checked="{{ issue.commit }}"></label>
-      <label>Private: <input type="checkbox" checked="{{ issue.private }}"></label>
-      <div class="created">{{ issue.created }}</div>
-      <div class="modified">{{ issue.modified }}</div>
-      <div class="owner"><span class="name">{{ issue.owner }}</span><span class="email">{{ issue.owner_email }}</span></div>
-      <template repeat="{{ patchset in issue.patchsets }}">
+      <label>Closed: <input type="checkbox" checked="{{ data.closed }}"></label>
+      <label>Commit: <input type="checkbox" checked="{{ data.commit }}"></label>
+      <label>Private: <input type="checkbox" checked="{{ data.private }}"></label>
+      <div class="created">{{ data.created }}</div>
+      <div class="modified">{{ data.modified }}</div>
+      <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
+      <template repeat="{{ patchset in data.patchsets }}">
         <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}"></rietveld-patchset>
       </template>
     </template>
@@ -48,17 +48,16 @@
   </template>
   <script>
   Polymer('rietveld-issue', {
+    server: '',
     number: '',
-    issue: null,
+    data: null,
     error: '',
-    numberChanged: function() {
-      this.issue = null;
+    issueLoadSucceeded: function(event) {
+      this.data = event.detail.response;
       this.error = '';
     },
-    issueLoadSucceeded: function(event) {
-      this.issue = event.detail.response;
-    },
     issueLoadFailed: function(event) {
+      this.data = null;
       this.error = event.detail.response;
     },
   });
@@ -74,8 +73,17 @@
         on-polymer-response="patchsetLoadSucceeded"
         on-polymer-error="patchsetLoadFailed">
     </polymer-ajax>
-    <div>TODO(rietveld-patchset)</div>
-    <!-- The API we need doesn't have CORS headers yet: https://codereview.appspot.com/12739044/ -->
+    <!--
+      The API we need doesn't have CORS headers yet:
+      https://codereview.appspot.com/12739044/
+      For now, we can test with a local server.
+    -->
+    <template if="{{ data }}">
+      <div class="created">{{ data.created }}</div>
+      <div class="modified">{{ data.modified }}</div>
+      <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
+    </template>
+
     <template if="{{ error }}">
       <h2>Patchset {{ patchset }} failed to load.</h2>
       <p>{{error}}</p>
@@ -83,15 +91,19 @@
   </template>
   <script>
   Polymer('rietveld-patchset', {
+    server: '',
     issue: '',
     patchset: '',
     data: null,
     error: '',
 
     patchsetLoadSucceeded: function(event) {
+      console.log(event.detail.response);
       this.data = event.detail.response;
+      this.error = '';
     },
     patchsetLoadFailed: function(event) {
+      this.data = null;
       this.error = event.detail.response;
     },
   });
