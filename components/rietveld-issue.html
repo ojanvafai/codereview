@@ -21,13 +21,13 @@
       <div class="description">{{ issue.description }}</div>
       <div class="recipients">
         <div class="reviewers">
-          <template repeat="{{ issue.reviewers }}">
-            <span class="email">{{ }}</span>
+          <template repeat="{{ email in issue.reviewers }}">
+            <span class="email">{{ email }}</span>
           </template>
         </div>
         <div class="cc">
-          <template repeat="{{ issue.cc }}">
-            <span class="email">{{ }}</span>
+          <template repeat="{{ email in issue.cc }}">
+            <span class="email">{{ email }}</span>
           </template>
         </div>
       </div>
@@ -37,8 +37,8 @@
       <div class="created">{{ issue.created }}</div>
       <div class="modified">{{ issue.modified }}</div>
       <div class="owner"><span class="name">{{ issue.owner }}</span><span class="email">{{ issue.owner_email }}</span></div>
-      <template repeat="{{ issue.patchsets }}">
-        <rietveld-patchset id="{{ }}"></rietveld-patchset>
+      <template repeat="{{ patchset in issue.patchsets }}">
+        <rietveld-patchset issue="{{ issue.issue }}" patchset="{{ patchset }}"></rietveld-patchset>
       </template>
     </template>
 
