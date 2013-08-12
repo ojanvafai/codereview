@@ -1,49 +1,41 @@
+<link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
+
 <polymer-element name="rietveld-issue" attributes="number">
   <template>
-    <template bind="{{ data }}">
-      <div>{{ subject }}</div>
-      <div><b>Description:</b></div>
-      <div>{{ description }}</div>
+    <polymer-ajax
+        auto
+        url="https://codereview.chromium.org/api/{{number}}"
+        handleAs="json"
+        id="ajax"
+        on-polymer-response="issueLoadSucceeded"
+        on-polymer-error="issueLoadFailed">
+    </polymer-ajax>
+
+    <template if="{{ issue }}">
+      <h1>{{ issue.subject }}</h1>
+      <p>{{ issue.description }}</p>
+    </template>
+
+    <template if="{{ error }}">
+      <h1>Issue {{number}} failed to load.</h1>
+      <p>{{error}}</p>
     </template>
   </template>
   <script>
   Polymer('rietveld-issue', {
-    number: null,
+    number: '',
+    issue: null,
+    error: '',
     numberChanged: function() {
-      rietveld.issue(this.number).then(function (value) {
-        console.log(value);
-        this.data = value;
-      }.bind(this));
+      this.issue = null;
+      this.error = '';
+    },
+    issueLoadSucceeded: function(event) {
+      this.issue = event.detail.response;
+    },
+    issueLoadFailed: function(event) {
+      this.error = event.detail.response;
     },
   });
   </script>
 </polymer-element>
-<script>
-var rietveld = {};
-
-(function() {
-
-// A simple Promise-based wrapper for XHR.
-function fetch(url) {
-  return new Promise(function(resolver) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.send();
-    xhr.addEventListener('load', function() {
-      resolver.resolve(JSON.parse(xhr.responseText));
-    });
-    xhr.addEventListener('error', function() {
-      resolver.reject();
-    });
-  });
-}
-
-rietveld.kInstance = 'https://codereview.chromium.org/';
-rietveld.kAPI = rietveld.kInstance + 'api/'
-
-rietveld.issue = function(number) {
-  return fetch(rietveld.kAPI + number);
-};
-
-})();
-</script>
