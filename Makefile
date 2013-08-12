@@ -13,7 +13,7 @@ deps: third_party/polymer-all third_party/Promises
 	@echo "Done!"
 
 serve:
-	@python -m SimpleHTTPServer
+	@python -m SimpleHTTPServer 9000
 
 clean:
 	rm -rf third_party/polymer-all third_party/Promises

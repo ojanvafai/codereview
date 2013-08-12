@@ -15,7 +15,6 @@
       white-space: pre;
     }
     </style>
-
     <template if="{{ issue }}">
       <h1 class="subject">{{ issue.subject }}</h1>
       <div class="description">{{ issue.description }}</div>
@@ -60,6 +59,39 @@
       this.issue = event.detail.response;
     },
     issueLoadFailed: function(event) {
+      this.error = event.detail.response;
+    },
+  });
+  </script>
+</polymer-element>
+<polymer-element name="rietveld-patchset" attributes="issue patchset">
+  <template>
+    <polymer-ajax
+        auto
+        url="https://codereview.chromium.org/api/{{ issue }}/{{ patchset }}"
+        handleAs="json"
+        id="ajax"
+        on-polymer-response="patchsetLoadSucceeded"
+        on-polymer-error="patchsetLoadFailed">
+    </polymer-ajax>
+    <div>TODO(rietveld-patchset)</div>
+    <!-- The API we need doesn't have CORS headers yet: https://codereview.appspot.com/12739044/ -->
+    <template if="{{ error }}">
+      <h2>Patchset {{ patchset }} failed to load.</h2>
+      <p>{{error}}</p>
+    </template>
+  </template>
+  <script>
+  Polymer('rietveld-patchset', {
+    issue: '',
+    patchset: '',
+    data: null,
+    error: '',
+
+    patchsetLoadSucceeded: function(event) {
+      this.data = event.detail.response;
+    },
+    patchsetLoadFailed: function(event) {
       this.error = event.detail.response;
     },
   });
