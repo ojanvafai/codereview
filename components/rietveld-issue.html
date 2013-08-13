@@ -79,6 +79,14 @@
       For now, we can test with a local server.
     -->
     <template if="{{ data }}">
+      <div class="files">
+        <template repeat="{{ file in data.files }}">
+          <div class="file">
+            <div class="status">{{ file.value.status }}</div>
+            <div class="name">{{ file.key }}</div>
+          </div>
+        </template>
+      </div>
       <div class="created">{{ data.created }}</div>
       <div class="modified">{{ data.modified }}</div>
       <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
@@ -97,9 +105,24 @@
     data: null,
     error: '',
 
+    massage_: function(data) {
+      function flatten(map) {
+        var result = [];
+        for (var key in map) {
+          result.push({
+            key: key,
+            value: map[key],
+          });
+        }
+        return result;
+      }
+      data.files = flatten(data.files);
+    },
+
     patchsetLoadSucceeded: function(event) {
-      console.log(event.detail.response);
+      this.massage_(event.detail.response);
       this.data = event.detail.response;
+      console.log(this.data);
       this.error = '';
     },
     patchsetLoadFailed: function(event) {
