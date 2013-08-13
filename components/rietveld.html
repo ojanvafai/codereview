@@ -84,7 +84,7 @@
           <div class="file">
             <div class="status">{{ file.value.status }}</div>
             <div class="name">{{ file.key }}</div>
-            <rietveld-diffview>{{ file.value.text }}</rietveld-diffview>
+            <rietveld-diffview diff="{{ file.value.text }}"></rietveld-diffview>
           </div>
         </template>
       </div>
@@ -133,19 +133,39 @@
   });
   </script>
 </polymer-element>
-<polymer-element name="rietveld-diffview">
+<polymer-element name="rietveld-diffview" attributes="diff">
   <template>
     <style>
-    .content-wrapper {
-      display: none;
+    .line {
+      font-family: monospace;
+      white-space: pre;
     }
     </style>
-    <div class="content-wrapper">
-      <content></content>
+    <div class="lines">
+      <template repeat="{{ line in data.lines }}">
+        <div class="line">{{ line }}</div>
+      </template>
     </div>
   </template>
   <script>
-  Polymer('rietveld-diffview', {
-  });
+  (function() {
+    function parseDiff(diff) {
+      if (!diff)
+        return null;
+      var lines = diff.split('\n');
+      return {
+        lines: lines,
+      };
+    }
+
+    Polymer('rietveld-diffview', {
+      diff: null,
+      data: null,
+
+      diffChanged: function() {
+        this.data = parseDiff(this.diff);
+      },
+    });
+  })();
   </script>
 </polymer-element>

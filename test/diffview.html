@@ -5,15 +5,23 @@
     <link rel="import" href="../components/rietveld.html">
   </head>
   <body>
-    <h1>Test page for rietveld-diffview</h1>
-    <rietveld-diffview id="viewer"></rietveld-diffview>
-    <script>
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'data/example.diff');
-      xhr.send();
-      xhr.addEventListener('load', function() {
-        document.getElementById('viewer').textContent = xhr.responseText;
+    <polymer-element name="rietveld-test-diffviewer">
+      <template>
+        <polymer-ajax
+            auto
+            url="data/example.diff"
+            on-polymer-response="diffLoadSucceeded">
+        </polymer-ajax>
+        <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
+      </template>
+      <script>
+      Polymer('rietveld-test-diffviewer', {
+        diffLoadSucceeded: function(event) {
+          this.diff = event.detail.response;
+        }
       });
-    </script>
+      </script>
+    </polymer-element>
+    <rietveld-test-diffviewer></rietveld-test-diffviewer>
   </body>
 </html>
