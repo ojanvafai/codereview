@@ -84,7 +84,7 @@
           <div class="file">
             <div class="status">{{ file.value.status }}</div>
             <div class="name">{{ file.key }}</div>
-            <diff-view>{{ file.value.text }}</diff-view>
+            <rietveld-diffview>{{ file.value.text }}</rietveld-diffview>
           </div>
         </template>
       </div>
@@ -130,6 +130,22 @@
       this.data = null;
       this.error = event.detail.response;
     },
+  });
+  </script>
+</polymer-element>
+<polymer-element name="rietveld-diffview">
+  <template>
+    <style>
+    .content-wrapper {
+      display: none;
+    }
+    </style>
+    <div class="content-wrapper">
+      <content></content>
+    </div>
+  </template>
+  <script>
+  Polymer('rietveld-diffview', {
   });
   </script>
 </polymer-element>
