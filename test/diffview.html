@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../third_party/polymer-all/polymer/polymer.js"></script>
+    <link rel="import" href="../components/rietveld.html">
+  </head>
+  <body>
+    <h1>Test page for rietveld-diffview</h1>
+    <rietveld-diffview id="viewer"></rietveld-diffview>
+    <script>
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'data/example.diff');
+      xhr.send();
+      xhr.addEventListener('load', function() {
+        document.getElementById('viewer').textContent = xhr.responseText;
+      });
+    </script>
+  </body>
+</html>

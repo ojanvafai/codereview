@@ -1,0 +1,36 @@
+@@ -1,10 +1,10 @@
+ <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
+ 
+-<polymer-element name="rietveld-issue" attributes="number">
++<polymer-element name="rietveld-issue" attributes="server number">
+   <template>
+     <polymer-ajax
+         auto
+-        url="https://codereview.chromium.org/api/{{number}}"
++        url="{{ server }}/api/{{number}}"
+         handleAs="json"
+         id="ajax"
+         on-polymer-response="issueLoadSucceeded"
+@@ -37,7 +37,7 @@
+       <div class="modified">{{ issue.modified }}</div>
+       <div class="owner"><span class="name">{{ issue.owner }}</span><span class="email">{{ issue.owner_email }}</span></div>
+       <template repeat="{{ patchset in issue.patchsets }}">
+-        <rietveld-patchset issue="{{ issue.issue }}" patchset="{{ patchset }}"></rietveld-patchset>
++        <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}"></rietveld-patchset>
+       </template>
+     </template>
+ 
+@@ -64,11 +64,11 @@
+   });
+   </script>
+ </polymer-element>
+-<polymer-element name="rietveld-patchset" attributes="issue patchset">
++<polymer-element name="rietveld-patchset" attributes="server issue patchset">
+   <template>
+     <polymer-ajax
+         auto
+-        url="https://codereview.chromium.org/api/{{ issue }}/{{ patchset }}"
++        url="{{ server }}/api/{{ issue }}/{{ patchset }}"
+         handleAs="json"
+         id="ajax"
+         on-polymer-response="patchsetLoadSucceeded"
