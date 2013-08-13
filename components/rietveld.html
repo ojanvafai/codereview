@@ -136,8 +136,11 @@
 <polymer-element name="rietveld-diffview" attributes="diff">
   <template>
     <style>
-    .line {
+    .lines {
       font-family: monospace;
+    }
+    .line {
+      white-space-collapse: discard;
     }
     .lineNumber {
       display: inline-block;
@@ -149,8 +152,9 @@
       background-color: #f8f8ff;
     }
     .text {
-      display: inline-block;
-      white-space: pre;
+      display: inline;
+      white-space: pre-wrap;
+      word-break: break-all;
       padding: 2px;
     }
     .add {
@@ -165,8 +169,16 @@
     }
     </style>
     <div class="lines">
-      <template repeat="{{ line in data.lines }}">
-        <div class="line {{ line.type }}"><div class="before lineNumber">{{ line.beforeLine }}</div><div class="after lineNumber">{{ line.afterLine }}</div><div class="text">{{ line.text }}</div></div>
+      <template repeat="{{ group in data.groups }}">
+        <div class="group">
+          <template repeat="{{ line in group }}">
+            <div class="line {{ line.type }}"><!--
+              --><div class="before lineNumber">{{ line.beforeLine }}</div><!--
+              --><div class="after lineNumber">{{ line.afterLine }}</div><!--
+              --><div class="text">{{ line.text }}</div><!--
+            --></div>
+          </template>
+        </div>
       </template>
     </div>
   </template>
@@ -212,6 +224,30 @@
       };
     }
 
+    function groupByType(ungroupedLines) {
+      var result = [];
+      var currentType = 'header';
+      var currentLines = [];
+      for (var i = 0; i < ungroupedLines.length; ++i) {
+        var line = ungroupedLines[i];
+        var type = line.type;
+        if (type == 'remove')
+          type = 'add'; // We group add and remove together.
+        if (type == currentType) {
+          currentLines.push(line);
+          continue;
+        }
+        if (currentLines.length)
+          result.push(currentLines);
+        currentLines = [];
+        currentType = type;
+        currentLines.push(line);
+      }
+      if (currentLines.length)
+        result.push(currentLines);
+      return result;
+    }
+
     function parseDiff(diff) {
       if (!diff)
         return null;
@@ -220,7 +256,7 @@
         afterLine: 0,
       };
       return {
-        lines: diff.split('\n').map(parseLine, state),
+        groups: groupByType(diff.split('\n').map(parseLine, state)),
       };
     }
 
