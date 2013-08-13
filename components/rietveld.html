@@ -138,23 +138,89 @@
     <style>
     .line {
       font-family: monospace;
+    }
+    .lineNumber {
+      display: inline-block;
+      padding: 2px;
+      width: 2em;
+      text-align: right;
+      -webkit-user-select: none;
+      color: #999;
+      background-color: #f8f8ff;
+    }
+    .text {
+      display: inline-block;
       white-space: pre;
+      padding: 2px;
+    }
+    .add {
+      background-color: #dfd;
+    }
+    .remove {
+      background-color: #fdd;
+    }
+    .header {
+      color: #999;
+      background-color: #f8f8ff;
     }
     </style>
     <div class="lines">
       <template repeat="{{ line in data.lines }}">
-        <div class="line">{{ line }}</div>
+        <div class="line {{ line.type }}"><div class="before lineNumber">{{ line.beforeLine }}</div><div class="after lineNumber">{{ line.afterLine }}</div><div class="text">{{ line.text }}</div></div>
       </template>
     </div>
   </template>
   <script>
   (function() {
+    function parseHeader(header) {
+      var i = 0;
+      if (header[i++] != '@')
+        throw 'Malformed header: ' + header;
+      if (header[i++] != '@')
+        throw 'Malformed header: ' + header;
+      if (header[i++] != ' ')
+        throw 'Malformed header: ' + header;
+      if (header[i++] != '-')
+        throw 'Malformed header: ' + header;
+    }
+
+    function parseLine(line) {
+      var c = line[0];
+      var type = 'unchanged';
+      if (c == '@') {
+        type = 'header';
+        parseHeader.call(this, line);
+      } else if (c == '+') {
+        type = 'add';
+        line = line.slice(1);
+        ++this.afterLine;
+      } else if (c == '-') {
+        type = 'remove';
+        line = line.slice(1);
+        ++this.beforeLine;
+      } else {
+        type = 'both';
+        line = line.slice(1);
+        ++this.afterLine;
+        ++this.beforeLine;
+      }
+      return {
+        beforeLine: this.beforeLine,
+        afterLine: this.afterLine,
+        type: type,
+        text: line,
+      };
+    }
+
     function parseDiff(diff) {
       if (!diff)
         return null;
-      var lines = diff.split('\n');
+      var state = {
+        beforeLine: 0,
+        afterLine: 0,
+      };
       return {
-        lines: lines,
+        lines: diff.split('\n').map(parseLine, state),
       };
     }
 
