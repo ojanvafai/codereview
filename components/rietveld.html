@@ -1,5 +1,5 @@
 <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
-
+<script src="diff.js"></script>
 <polymer-element name="rietveld-issue" attributes="server number">
   <template>
     <polymer-ajax
@@ -70,24 +70,23 @@
         url="{{ server }}/api/{{ issue }}/{{ patchset }}"
         handleAs="json"
         id="ajax"
-        on-polymer-response="patchsetLoadSucceeded"
-        on-polymer-error="patchsetLoadFailed">
+        on-polymer-response="dataLoadSucceeded"
+        on-polymer-error="dataLoadFailed">
+    </polymer-ajax>
+    <polymer-ajax
+        auto
+        url="{{ server }}/download/issue{{ issue }}_{{ patchset }}.diff"
+        id="ajax"
+        on-polymer-response="diffLoadSucceeded"
+        on-polymer-error="diffLoadFailed">
     </polymer-ajax>
     <!--
       The API we need doesn't have CORS headers yet:
       https://codereview.appspot.com/12739044/
       For now, we can test with a local server.
     -->
-    <template if="{{ data }}">
-      <div class="files">
-        <template repeat="{{ file in data.files }}">
-          <div class="file">
-            <div class="status">{{ file.value.status }}</div>
-            <div class="name">{{ file.key }}</div>
-            <rietveld-diffview diff="{{ file.value.text }}"></rietveld-diffview>
-          </div>
-        </template>
-      </div>
+    <template if="{{ data &amp;&amp; diff }}">
+      <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
       <div class="created">{{ data.created }}</div>
       <div class="modified">{{ data.modified }}</div>
       <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
@@ -104,6 +103,7 @@
     issue: '',
     patchset: '',
     data: null,
+    diff: null,
     error: '',
 
     massage_: function(data) {
@@ -120,13 +120,19 @@
       data.files = flatten(data.files);
     },
 
-    patchsetLoadSucceeded: function(event) {
+    diffLoadSucceeded: function(event) {
+      this.diff = event.detail.response;
+    },
+    diffLoadFailed: function(event) {
+      this.diff = null;
+    },
+
+    dataLoadSucceeded: function(event) {
       this.massage_(event.detail.response);
       this.data = event.detail.response;
-      console.log(this.data);
       this.error = '';
     },
-    patchsetLoadFailed: function(event) {
+    dataLoadFailed: function(event) {
       this.data = null;
       this.error = event.detail.response;
     },
@@ -150,6 +156,9 @@
     }
     .group {
       display: flex;
+    }
+    .left, .middle, .right {
+      -webkit-transform: translateZ(0);
     }
     #diff.animating:not(.unified) .middle {
       -webkit-animation-name: slide-in;
@@ -212,111 +221,50 @@
     }
     </style>
     <button on-click="onToggle">toggle</button>
-    <div id="diff" class="lines" on-webkitAnimationEnd="onAnimationEnd">
-      <template repeat="{{ group in data.groups }}">
-        <div class="group">
-          <div class="left">
-            <template repeat="{{ line in group }}">
-              <div class="line {{ line.type }}"><!--
-              --><div class="text">{{ line.text }}</div><!--
-            --></div>
-            </template>
-          </div>
-          <div class="middle"></div>
-          <div class="right">
-            <template repeat="{{ line in group }}">
-              <div class="line {{ line.type }}"><!--
-              --><div class="text">{{ line.text }}</div><!--
-            --></div>
-            </template>
-          </div>
+    <div id="diff" class="lines unified" on-webkitAnimationEnd="onAnimationEnd">
+      <template repeat="{{ file in data }}">
+        <div class="file">
+          <div class="name">{{ file.name }}</div>
+          <template repeat="{{ group in file.groups }}">
+            <div class="group">
+              <div class="left">
+                <template repeat="{{ line in group }}">
+                  <div class="line {{ line.type }}"><!--
+                  --><div class="text">{{ line.text }}</div><!--
+                --></div>
+                </template>
+              </div>
+              <div class="middle"></div>
+              <div class="right">
+                <template repeat="{{ line in group }}">
+                  <div class="line {{ line.type }}"><!--
+                  --><div class="text">{{ line.text }}</div><!--
+                --></div>
+                </template>
+              </div>
+            </div>
+          </template>
         </div>
       </template>
     </div>
   </template>
   <script>
-  (function() {
-    function parseLine(line) {
-      var c = line[0];
-      var type = 'unchanged';
-      if (c == '@') {
-        type = 'header';
-      } else if (c == '+') {
-        type = 'add';
-        line = line.slice(1);
-        ++this.afterLine;
-      } else if (c == '-') {
-        type = 'remove';
-        line = line.slice(1);
-        ++this.beforeLine;
-      } else {
-        type = 'both';
-        line = line.slice(1);
-        ++this.afterLine;
-        ++this.beforeLine;
-      }
-      return {
-        beforeLine: this.beforeLine,
-        afterLine: this.afterLine,
-        type: type,
-        text: line,
-      };
-    }
+  Polymer('rietveld-diffview', {
+    diff: null,
+    data: null,
 
-    function groupByType(ungroupedLines) {
-      var result = [];
-      var currentType = 'header';
-      var currentLines = [];
-      for (var i = 0; i < ungroupedLines.length; ++i) {
-        var line = ungroupedLines[i];
-        var type = line.type;
-        if (type == 'remove')
-          type = 'add'; // We group add and remove together.
-        if (type == currentType) {
-          currentLines.push(line);
-          continue;
-        }
-        if (currentLines.length)
-          result.push(currentLines);
-        currentLines = [];
-        currentType = type;
-        currentLines.push(line);
-      }
-      if (currentLines.length)
-        result.push(currentLines);
-      return result;
-    }
+    onAnimationEnd: function() {
+      this.$.diff.classList.remove('animating');
+    },
 
-    function parseDiff(diff) {
-      if (!diff)
-        return null;
-      var state = {
-        beforeLine: 0,
-        afterLine: 0,
-      };
-      return {
-        groups: groupByType(diff.split('\n').map(parseLine, state)),
-      };
-    }
+    onToggle: function() {
+      this.$.diff.classList.toggle('unified');
+      this.$.diff.classList.add('animating');
+    },
 
-    Polymer('rietveld-diffview', {
-      diff: null,
-      data: null,
-
-      onAnimationEnd: function() {
-        console.log('onAnimationEnd');
-        this.$.diff.classList.remove('animating');
-      },
-
-      onToggle: function() {
-        this.$.diff.classList.toggle('unified');
-        this.$.diff.classList.add('animating');
-      },
-
-      diffChanged: function() {
-        this.data = parseDiff(this.diff);
-      },
-    });
-  })();
+    diffChanged: function() {
+      this.data = diff.parse(this.diff);
+    },
+  });
   </script>
 </polymer-element>

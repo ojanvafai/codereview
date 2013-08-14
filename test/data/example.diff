@@ -1,36 +1,63 @@
-@@ -1,10 +1,10 @@
- <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
+Index: Source/core/page/PageScaleConstraintsSet.cpp
+diff --git a/Source/core/page/PageScaleConstraintsSet.cpp b/Source/core/page/PageScaleConstraintsSet.cpp
+index a5df3e1550f4d867b59bc540180127f51e668d75..294a9beb3f2bdbe3183fb23a9b38191846fb9e66 100644
+--- a/Source/core/page/PageScaleConstraintsSet.cpp
++++ b/Source/core/page/PageScaleConstraintsSet.cpp
+@@ -111,7 +111,7 @@ static float computeDeprecatedTargetDensityDPIFactor(const ViewportArguments& ar
+         targetDPI = 240.0f;
+     else if (arguments.deprecatedTargetDensityDPI != ViewportArguments::ValueAuto)
+         targetDPI = arguments.deprecatedTargetDensityDPI;
+-    return targetDPI > 0 ? (deviceScaleFactor * 120.0f) / targetDPI : 1.0f;
++    return targetDPI > 0 ? 160.0f / targetDPI : 1.0f;
+ }
  
--<polymer-element name="rietveld-issue" attributes="number">
-+<polymer-element name="rietveld-issue" attributes="server number">
-   <template>
-     <polymer-ajax
-         auto
--        url="https://codereview.chromium.org/api/{{number}}"
-+        url="{{ server }}/api/{{number}}"
-         handleAs="json"
-         id="ajax"
-         on-polymer-response="issueLoadSucceeded"
-@@ -37,7 +37,7 @@
-       <div class="modified">{{ issue.modified }}</div>
-       <div class="owner"><span class="name">{{ issue.owner }}</span><span class="email">{{ issue.owner_email }}</span></div>
-       <template repeat="{{ patchset in issue.patchsets }}">
--        <rietveld-patchset issue="{{ issue.issue }}" patchset="{{ patchset }}"></rietveld-patchset>
-+        <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}"></rietveld-patchset>
-       </template>
-     </template>
+ static float getLayoutWidthForNonWideViewport(const FloatSize& deviceSize, float initialScale)
+Index: Source/web/tests/WebFrameTest.cpp
+diff --git a/Source/web/tests/WebFrameTest.cpp b/Source/web/tests/WebFrameTest.cpp
+index 168fb2c211f73d4eaaa5aa753a240a0389cdaba4..a097e3e0187480724f50510d9d28591da4cf3732 100644
+--- a/Source/web/tests/WebFrameTest.cpp
++++ b/Source/web/tests/WebFrameTest.cpp
+@@ -866,20 +866,33 @@ TEST_F(WebFrameTest, targetDensityDpiHigh)
+     registerMockedHttpURLLoad("viewport-target-densitydpi-high.html");
  
-@@ -64,11 +64,11 @@
-   });
-   </script>
- </polymer-element>
--<polymer-element name="rietveld-patchset" attributes="issue patchset">
-+<polymer-element name="rietveld-patchset" attributes="server issue patchset">
-   <template>
-     <polymer-ajax
-         auto
--        url="https://codereview.chromium.org/api/{{ issue }}/{{ patchset }}"
-+        url="{{ server }}/api/{{ issue }}/{{ patchset }}"
-         handleAs="json"
-         id="ajax"
-         on-polymer-response="patchsetLoadSucceeded"
+     FixedLayoutTestWebViewClient client;
+-    client.m_screenInfo.deviceScaleFactor = 4.0f / 3.0f;
++    // high-dpi = 240
++    float targetDpi = 240.0f;
++    float deviceScaleFactors[] = { 1.0f, 4.0f / 3.0f, 2.0f };
+     int viewportWidth = 640;
+     int viewportHeight = 480;
+ 
+-    m_webView = FrameTestHelpers::createWebViewAndLoad(m_baseURL + "viewport-target-densitydpi-high.html", true, 0, &client);
+-    m_webView->enableFixedLayoutMode(true);
+-    m_webView->settings()->setViewportEnabled(true);
+-    m_webView->settings()->setSupportDeprecatedTargetDensityDPI(true);
+-    m_webView->resize(WebSize(viewportWidth, viewportHeight));
++    for (size_t i = 0; i < ARRAY_SIZE(deviceScaleFactors); ++i) {
++        float deviceScaleFactor = deviceScaleFactors[i];
++        float deviceDpi = deviceScaleFactor * 160.0f;
++        client.m_screenInfo.deviceScaleFactor = deviceScaleFactor;
+ 
+-    // high-dpi = 240, device-dpi = 160
+-    EXPECT_NEAR(viewportWidth * (240.0f / 160.0f), m_webView->fixedLayoutSize().width, 1.0f);
+-    EXPECT_NEAR(viewportHeight * (240.0f / 160.0f), m_webView->fixedLayoutSize().height, 1.0f);
+-    EXPECT_NEAR(160.0f / 240.0f, m_webView->pageScaleFactor(), 0.01f);
++        m_webView = FrameTestHelpers::createWebViewAndLoad(m_baseURL + "viewport-target-densitydpi-high.html", true, 0, &client);
++        m_webView->enableFixedLayoutMode(true);
++        m_webView->settings()->setViewportEnabled(true);
++        m_webView->settings()->setSupportDeprecatedTargetDensityDPI(true);
++        m_webView->resize(WebSize(viewportWidth, viewportHeight));
++
++        // We need to account for the fact that logical pixels are unconditionally multiplied by deviceScaleFactor to produce
++        // physical pixels.
++        float densityDpiScaleRatio = deviceScaleFactor * targetDpi / deviceDpi;
++        EXPECT_NEAR(viewportWidth * densityDpiScaleRatio, m_webView->fixedLayoutSize().width, 1.0f);
++        EXPECT_NEAR(viewportHeight * densityDpiScaleRatio, m_webView->fixedLayoutSize().height, 1.0f);
++        EXPECT_NEAR(1.0f / densityDpiScaleRatio, m_webView->pageScaleFactor(), 0.01f);
++
++        m_webView->close();
++        m_webView = 0;
++    }
+ }
+ 
+ TEST_F(WebFrameTest, targetDensityDpiDevice)

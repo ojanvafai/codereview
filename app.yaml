@@ -1,0 +1,15 @@
+application: google.com:abarth
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /test
+  static_dir: test
+
+- url: /components
+  static_dir: components
+
+- url: /third_party
+  static_dir: third_party

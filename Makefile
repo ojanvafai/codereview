@@ -15,5 +15,8 @@ deps: third_party/polymer-all third_party/Promises
 serve:
 	@python -m SimpleHTTPServer 9000
 
+deploy:
+	@../google_appengine/appcfg.py update .
+
 clean:
 	rm -rf third_party/polymer-all third_party/Promises
