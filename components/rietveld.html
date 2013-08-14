@@ -136,23 +136,89 @@
 <polymer-element name="rietveld-diffview" attributes="diff">
   <template>
     <style>
+    @-webkit-keyframes slide-in {
+       0%   { width: 200%; }
+       100% { width: 100%; }
+    }
+    @-webkit-keyframes slide-out {
+       0%   { width: 100%; }
+       100% { width: 200%; }
+    }
+    @-webkit-keyframes hide-line-numbers {
+       0%   { width: 2em; }
+       100% { width: 0; }
+    }
+    @-webkit-keyframes show-line-numbers {
+       0%   { width: 0; }
+       100% { width: 2em; }
+    }
     .lines {
       font-family: monospace;
+      overflow-x: hidden;
+    }
+    .left, .right {
+      flex: 1;
+    }
+    .side-by-side .left .add,
+    .side-by-side .right .remove {
+      display: none;
+    }
+    .animate.side-by-side .left .after,
+    .animate.side-by-side .right .before {
+      -webkit-animation-name: hide-line-numbers;
+      -webkit-animation-duration: 0.3s;
+      -webkit-animation-timing-function: ease-in-out;
+      width: 0;
+    }
+    :not(.animate).side-by-side .left .after,
+    :not(.animate).side-by-side .right .before {
+      width: 0;
+    }
+    .animate.unified .left .after,
+    .animate.unified .right .before {
+      -webkit-animation-name: show-line-numbers;
+      -webkit-animation-duration: 0.3s;
+      -webkit-animation-timing-function: ease-in-out;
+      width: 2em;
+    }
+    .group {
+      display: flex;
+    }
+    .animate.side-by-side .group {
+      -webkit-animation-name: slide-in;
+      -webkit-animation-duration: 0.3s;
+      -webkit-animation-timing-function: ease-in-out;
+      width: 100%;
+    }
+    :not(.animate).side-by-side .group {
+      width: 100%;
+    }
+    .animate.unified .group {
+      -webkit-animation-name: slide-out;
+      -webkit-animation-duration: 0.3s;
+      -webkit-animation-timing-function: ease-in-out;
+      width: 200%;
+    }
+    :not(.animate).animate.unified .group {
+      width: 100%;
+    }
+    :not(.animate).unified .right {
+      display: none;
     }
     .line {
-      white-space-collapse: discard;
+      display: flex;
     }
-    .lineNumber {
-      display: inline-block;
-      padding: 2px;
+    .line-number {
+      flex-shrink: 0;
       width: 2em;
       text-align: right;
       -webkit-user-select: none;
       color: #999;
       background-color: #f8f8ff;
+      white-space: pre;
+      overflow: hidden;
     }
     .text {
-      display: inline;
       white-space: pre-wrap;
       word-break: break-all;
       padding: 2px;
@@ -168,16 +234,28 @@
       background-color: #f8f8ff;
     }
     </style>
-    <div class="lines">
+    <button on-click="onToggle">toggle</button>
+    <div id="d" class="lines side-by-side" on-webkitAnimationEnd="onAnimationEnd">
       <template repeat="{{ group in data.groups }}">
         <div class="group">
-          <template repeat="{{ line in group }}">
-            <div class="line {{ line.type }}"><!--
-              --><div class="before lineNumber">{{ line.beforeLine }}</div><!--
-              --><div class="after lineNumber">{{ line.afterLine }}</div><!--
+          <div class="left">
+            <template repeat="{{ line in group }}">
+              <div class="line {{ line.type }}"><!--
+              --><div class="before line-number">{{ line.beforeLine }}</div><!--
+              --><div class="after line-number">{{ line.afterLine }}</div><!--
               --><div class="text">{{ line.text }}</div><!--
             --></div>
-          </template>
+            </template>
+          </div>
+          <div class="right">
+            <template repeat="{{ line in group }}">
+              <div class="line {{ line.type }}"><!--
+              --><div class="before line-number">{{ line.beforeLine }}</div><!--
+              --><div class="after line-number">{{ line.afterLine }}</div><!--
+              --><div class="text">{{ line.text }}</div><!--
+            --></div>
+            </template>
+          </div>
         </div>
       </template>
     </div>
@@ -263,6 +341,21 @@
     Polymer('rietveld-diffview', {
       diff: null,
       data: null,
+
+      onAnimationEnd: function() {
+        console.log('onAnimationEnd');
+      },
+
+      onToggle: function() {
+        var classList = this.$.d.classList;
+        if (classList.contains('unified')) {
+          classList.remove('unified');
+          classList.add('animate', 'side-by-side');
+        } else {
+          classList.remove('side-by-side');
+          classList.add('animate', 'unified');
+        }
+      },
 
       diffChanged: function() {
         this.data = parseDiff(this.diff);
