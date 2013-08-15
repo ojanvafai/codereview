@@ -4,7 +4,7 @@ all:
 	@echo "Run 'make deps' to download dependencies."
 
 third_party/polymer-all:
-	cd third_party && git clone git://github.com/Polymer/polymer-all.git --recursive
+	cd third_party && git clone git://github.com/Polymer/polymer-all.git -b master --recursive
 
 third_party/Promises:
 	cd third_party && git clone https://github.com/slightlyoff/Promises.git

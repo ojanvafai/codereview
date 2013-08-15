@@ -7,7 +7,7 @@
   <template>
     <polymer-ajax
         auto
-        url="{{ server }}/api/{{number}}"
+        url="{{ server }}/api/{{number}}?messages=true"
         handleAs="json"
         id="ajax"
         on-polymer-response="issueLoadSucceeded"
@@ -47,6 +47,23 @@
     .cc:before {
       content: "CC: ";
     }
+    .message {
+      border: 1px solid #ddd;
+    }
+    .message .sender {
+      background-color: #f8f8ff;
+      padding: 10px;
+      font-style: italic;
+    }
+    .message .date {
+      float: right;
+      padding: 10px;
+      font-style: italic;
+    }
+    .message .text {
+      padding: 10px;
+      white-space: pre;
+    }
     </style>
     <template if="{{ data }}">
       <div class="issue">
@@ -80,6 +97,15 @@
         <polymer-ui-toggle-button onCaption="Closed" offCaption="Open" value="{{ data.closed }}"></polymer-ui-toggle-button>
         <polymer-ui-toggle-button onCaption="CQ+" offCaption="CQ-" value="{{ data.commit }}"></polymer-ui-toggle-button>
         <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
+        <div class="messages">
+          <template repeat="{{ message in data.messages }}">
+            <div class="message">
+              <div class="date">{{ message.date }}</div>
+              <div class="sender">{{ message.sender }}</div>
+              <div class="text">{{ message.text }}</div>
+            </div>
+          </template>
+        </div>
       </div>
     </template>
 
