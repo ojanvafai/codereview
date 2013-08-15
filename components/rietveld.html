@@ -50,10 +50,22 @@
     .message {
       border: 1px solid #ddd;
     }
+    .message.approved {
+      border: 1px solid #8d8;
+    }
+    .message.disapproved {
+      border: 1px solid red;
+    }
     .message .sender {
       background-color: #f8f8ff;
       padding: 10px;
       font-style: italic;
+    }
+    .message.approved .sender {
+      background-color: #dfd;
+    }
+    .message.disapproved .sender {
+      background-color: #fdd;
     }
     .message .date {
       float: right;
@@ -99,7 +111,7 @@
         <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
         <div class="messages">
           <template repeat="{{ message in data.messages }}">
-            <div class="message">
+            <div class="message {{ message.approval ? 'approved' : ''}} {{ message.disapproval ? 'disapproved' : '' }}">
               <div class="date">{{ message.date }}</div>
               <div class="sender">{{ message.sender }}</div>
               <div class="text">{{ message.text }}</div>
