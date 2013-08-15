@@ -1,19 +1,41 @@
+<!DOCTYPE html>
 <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-toggle-button/polymer-ui-toggle-button.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-collapsible/polymer-ui-collapsible.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-accordion/polymer-ui-accordion.html">
 <script src="diff.js"></script>
+<polymer-element name="rietveld-app" attributes="server">
+  <template>
+    <rietveld-issue class="issue" server="{{ server }}" number="{{ number }}"></rietveld-issue>
+  </template>
+  <script>
+  Polymer('rietveld-app', {
+    server: '',
+    number: '',
+    ready: function() {
+      var numberParameter = location.search.match(/id=([^&]+)/);
+      if (numberParameter)
+        this.number = decodeURIComponent(numberParameter[1]);
+    },
+  });
+  </script>
+</polymer-element>
 <polymer-element name="rietveld-issue" attributes="server number">
   <template>
-    <polymer-ajax
-        auto
-        url="{{ server }}/api/{{ number }}?messages=true"
-        handleAs="json"
-        id="ajax"
-        on-polymer-response="issueLoadSucceeded"
-        on-polymer-error="issueLoadFailed">
-    </polymer-ajax>
+    <template if="{{ server &amp;&amp; number }}">
+      <polymer-ajax
+          auto
+          url="{{ server }}/api/{{ number }}?messages=true"
+          handleAs="json"
+          id="ajax"
+          on-polymer-response="issueLoadSucceeded"
+          on-polymer-error="issueLoadFailed">
+      </polymer-ajax>
+    </template>
     <style>
+    @host {
+      * { display: block; }
+    }
     .issue {
       font-family: 'Helvetica Neue', Helvetica, Arial, 'open sans', sans-serif;
     }
@@ -28,7 +50,7 @@
       cursor: pointer;
     }
     .description {
-      white-space: pre;
+      white-space: pre-wrap;
     }
     .metadata {
       padding: 10px;
@@ -74,7 +96,8 @@
     }
     .message .text {
       padding: 10px;
-      white-space: pre;
+      white-space: pre-wrap;
+      overflow: hidden;
     }
     </style>
     <template if="{{ data }}">
@@ -96,7 +119,7 @@
             </div>
           </div>
         </div>
-        <polymer-ui-accordion on-polymer-activate="onActivatePatchset">
+        <polymer-ui-accordion multi on-polymer-activate="onActivatePatchset">
           <template repeat="{{ patchset in data.patchsets }}">
             <polymer-ui-collapsible>
               <div class="polymer-ui-collapsible-header">Patchset {{ patchset }}</div>
@@ -180,6 +203,9 @@
 <polymer-element name="rietveld-diffview" attributes="diff">
   <template>
     <style>
+    @host {
+      * { display: block; }
+    }
     @-webkit-keyframes slide-in {
        0%   { width: 50%; }
        100% { width: 0%; }
