@@ -1,5 +1,6 @@
 <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-collapsible/polymer-ui-collapsible.html">
+<link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-accordion/polymer-ui-accordion.html">
 <script src="diff.js"></script>
 <polymer-element name="rietveld-issue" attributes="server number">
   <template>
@@ -12,6 +13,17 @@
         on-polymer-error="issueLoadFailed">
     </polymer-ajax>
     <style>
+    polymer-ui-collapsible {
+      margin-bottom: 2px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+    .polymer-ui-collapsible-header {
+      padding: 10px;
+      border-bottom: 1px solid #bcbcbc;
+      font-weight: bold;
+      cursor: pointer;
+    }
     .description {
       white-space: pre;
     }
@@ -37,9 +49,16 @@
       <div class="created">{{ data.created }}</div>
       <div class="modified">{{ data.modified }}</div>
       <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
-      <template repeat="{{ patchset in data.patchsets }}">
-        <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}"></rietveld-patchset>
-      </template>
+      <polymer-ui-accordion>
+        <template repeat="{{ patchset in data.patchsets }}">
+          <polymer-ui-collapsible>
+            <div class="polymer-ui-collapsible-header">Patchset {{ patchset }}</div>
+            <div class="content">
+              <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}" active></rietveld-patchset>
+            </div>
+          </polymer-ui-collapsible>
+        </template>
+      </polymer-ui-accordion>
     </template>
 
     <template if="{{ error }}">
@@ -64,33 +83,16 @@
   });
   </script>
 </polymer-element>
-<polymer-element name="rietveld-patchset" attributes="server issue patchset">
+<polymer-element name="rietveld-patchset" attributes="server issue patchset active">
   <template>
     <polymer-ajax
-        auto
-        url="{{ server }}/api/{{ issue }}/{{ patchset }}"
-        handleAs="json"
-        id="ajax"
-        on-polymer-response="dataLoadSucceeded"
-        on-polymer-error="dataLoadFailed">
-    </polymer-ajax>
-    <polymer-ajax
-        auto
         url="{{ server }}/download/issue{{ issue }}_{{ patchset }}.diff"
         id="ajax"
         on-polymer-response="diffLoadSucceeded"
         on-polymer-error="diffLoadFailed">
     </polymer-ajax>
-    <template if="{{ data &amp;&amp; diff }}">
+    <template if="{{ diff }}">
       <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
-      <div class="created">{{ data.created }}</div>
-      <div class="modified">{{ data.modified }}</div>
-      <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
-    </template>
-
-    <template if="{{ error }}">
-      <h2>Patchset {{ patchset }} failed to load.</h2>
-      <p>{{error}}</p>
     </template>
   </template>
   <script>
@@ -98,39 +100,15 @@
     server: '',
     issue: '',
     patchset: '',
-    data: null,
     diff: null,
-    error: '',
-
-    massage_: function(data) {
-      function flatten(map) {
-        var result = [];
-        for (var key in map) {
-          result.push({
-            key: key,
-            value: map[key],
-          });
-        }
-        return result;
-      }
-      data.files = flatten(data.files);
+    activeChanged: function() {
+      this.$.ajax.auto = true;
     },
-
     diffLoadSucceeded: function(event) {
       this.diff = event.detail.response;
     },
     diffLoadFailed: function(event) {
       this.diff = null;
-    },
-
-    dataLoadSucceeded: function(event) {
-      this.massage_(event.detail.response);
-      this.data = event.detail.response;
-      this.error = '';
-    },
-    dataLoadFailed: function(event) {
-      this.data = null;
-      this.error = event.detail.response;
     },
   });
   </script>
@@ -140,7 +118,7 @@
     <style>
     .polymer-ui-collapsible-header {
       padding: 5px;
-      border: 1px solid #bcbcbc;
+      background-color: #f0f0f8;
       cursor: pointer;
     }
     @-webkit-keyframes slide-in {
@@ -221,7 +199,6 @@
       background-color: #f8f8ff;
     }
     </style>
-    <button on-click="onToggle">toggle</button>
     <div id="diff" class="lines unified" on-webkitAnimationEnd="onAnimationEnd">
       <template repeat="{{ file in data }}">
         <polymer-ui-collapsible class="file">
