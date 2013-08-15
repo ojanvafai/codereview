@@ -224,6 +224,7 @@
     }
     </style>
     <div id="diff" class="unified" on-webkitAnimationEnd="onAnimationEnd">
+      <button on-click="onToggle">Toggle</button>
       <template repeat="{{ file in data }}">
         <div class="name text">{{ file.name }}</div>
         <template repeat="{{ group in file.groups }}">
