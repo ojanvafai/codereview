@@ -7,7 +7,7 @@
   <template>
     <polymer-ajax
         auto
-        url="{{ server }}/api/{{number}}?messages=true"
+        url="{{ server }}/api/{{ number }}?messages=true"
         handleAs="json"
         id="ajax"
         on-polymer-response="issueLoadSucceeded"
