@@ -1,4 +1,5 @@
 <link rel="import" href="../third_party/polymer-all/polymer-elements/polymer-ajax/polymer-ajax.html">
+<link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-toggle-button/polymer-ui-toggle-button.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-collapsible/polymer-ui-collapsible.html">
 <link rel="import" href="../third_party/polymer-all/polymer-ui-elements/polymer-ui-accordion/polymer-ui-accordion.html">
 <script src="diff.js"></script>
@@ -13,10 +14,12 @@
         on-polymer-error="issueLoadFailed">
     </polymer-ajax>
     <style>
+    .issue {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'open sans', sans-serif;
+    }
     polymer-ui-collapsible {
       margin-bottom: 2px;
       border: 1px solid #ddd;
-      border-radius: 3px;
     }
     .polymer-ui-collapsible-header {
       padding: 10px;
@@ -27,38 +30,57 @@
     .description {
       white-space: pre;
     }
+    .metadata {
+      padding: 10px;
+    }
+    .subject{
+      font-weight: bold;
+    }
+    .owner {
+      font-style: italic;
+    }
+    .description {
+    }
+    .reviewers:before {
+      content: "Reviewers: "
+    }
+    .cc:before {
+      content: "CC: ";
+    }
     </style>
     <template if="{{ data }}">
-      <h1 class="subject">{{ data.subject }}</h1>
-      <div class="description">{{ data.description }}</div>
-      <div class="recipients">
-        <div class="reviewers">
-          <template repeat="{{ email in data.reviewers }}">
-            <span class="email">{{ email }}</span>
-          </template>
-        </div>
-        <div class="cc">
-          <template repeat="{{ email in data.cc }}">
-            <span class="email">{{ email }}</span>
-          </template>
-        </div>
-      </div>
-      <label>Closed: <input type="checkbox" checked="{{ data.closed }}"></label>
-      <label>Commit: <input type="checkbox" checked="{{ data.commit }}"></label>
-      <label>Private: <input type="checkbox" checked="{{ data.private }}"></label>
-      <div class="created">{{ data.created }}</div>
-      <div class="modified">{{ data.modified }}</div>
-      <div class="owner"><span class="name">{{ data.owner }}</span><span class="email">{{ data.owner_email }}</span></div>
-      <polymer-ui-accordion>
-        <template repeat="{{ patchset in data.patchsets }}">
-          <polymer-ui-collapsible>
-            <div class="polymer-ui-collapsible-header">Patchset {{ patchset }}</div>
-            <div class="content">
-              <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}" active></rietveld-patchset>
+      <div class="issue">
+        <div class="metadata">
+          <div class="subject">{{ data.subject }}</div>
+          <div class="owner">By <span class="name">{{ data.owner }}</span> &lt;<span class="email">{{ data.owner_email }}</span>&gt;</div>
+          <div class="description">{{ data.description }}</div>
+          <div class="recipients">
+            <div class="reviewers">
+              <template repeat="{{ email in data.reviewers }}">
+                <span class="email">{{ email }}</span>
+              </template>
             </div>
-          </polymer-ui-collapsible>
-        </template>
-      </polymer-ui-accordion>
+            <div class="cc">
+              <template repeat="{{ email in data.cc }}">
+                <span class="email">{{ email }}</span>
+              </template>
+            </div>
+          </div>
+        </div>
+        <polymer-ui-accordion on-polymer-activate="onActivatePatchset">
+          <template repeat="{{ patchset in data.patchsets }}">
+            <polymer-ui-collapsible>
+              <div class="polymer-ui-collapsible-header">Patchset {{ patchset }}</div>
+              <div class="content">
+                <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}" active></rietveld-patchset>
+              </div>
+            </polymer-ui-collapsible>
+          </template>
+        </polymer-ui-accordion>
+        <polymer-ui-toggle-button onCaption="Closed" offCaption="Open" value="{{ data.closed }}"></polymer-ui-toggle-button>
+        <polymer-ui-toggle-button onCaption="CQ+" offCaption="CQ-" value="{{ data.commit }}"></polymer-ui-toggle-button>
+        <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
+      </div>
     </template>
 
     <template if="{{ error }}">
@@ -72,6 +94,10 @@
     number: '',
     data: null,
     error: '',
+    onActivatePatchset: function(event) {
+      // If we wanted to lazily fetch the patchsets, we could do that here.
+      // event.detail.item.querySelector('rietveld-patchset').active = true;
+    },
     issueLoadSucceeded: function(event) {
       this.data = event.detail.response;
       this.error = '';
@@ -116,11 +142,6 @@
 <polymer-element name="rietveld-diffview" attributes="diff">
   <template>
     <style>
-    .polymer-ui-collapsible-header {
-      padding: 5px;
-      background-color: #f0f0f8;
-      cursor: pointer;
-    }
     @-webkit-keyframes slide-in {
        0%   { width: 50%; }
        100% { width: 0%; }
@@ -129,7 +150,10 @@
        0%   { width: 0%; }
        100% { width: 50%; }
     }
-    .lines {
+    .name {
+      background-color: #f0f0f8;
+    }
+    #diff {
       overflow-x: hidden;
       font-family: monospace;
     }
@@ -199,32 +223,28 @@
       background-color: #f8f8ff;
     }
     </style>
-    <div id="diff" class="lines unified" on-webkitAnimationEnd="onAnimationEnd">
+    <div id="diff" class="unified" on-webkitAnimationEnd="onAnimationEnd">
       <template repeat="{{ file in data }}">
-        <polymer-ui-collapsible class="file">
-          <div class="polymer-ui-collapsible-header name">{{ file.name }}</div>
-          <div clsas="content">
-            <template repeat="{{ group in file.groups }}">
-              <div class="group">
-                <div class="left">
-                  <template repeat="{{ line in group }}">
-                    <div class="line {{ line.type }}"><!--
-                    --><div class="text">{{ line.text }}</div><!--
-                  --></div>
-                  </template>
-                </div>
-                <div class="middle"></div>
-                <div class="right">
-                  <template repeat="{{ line in group }}">
-                    <div class="line {{ line.type }}"><!--
-                    --><div class="text">{{ line.text }}</div><!--
-                  --></div>
-                  </template>
-                </div>
-              </div>
-            </template>
+        <div class="name text">{{ file.name }}</div>
+        <template repeat="{{ group in file.groups }}">
+          <div class="group">
+            <div class="left">
+              <template repeat="{{ line in group }}">
+                <div class="line {{ line.type }}"><!--
+                --><div class="text">{{ line.text }}</div><!--
+              --></div>
+              </template>
+            </div>
+            <div class="middle"></div>
+            <div class="right">
+              <template repeat="{{ line in group }}">
+                <div class="line {{ line.type }}"><!--
+                --><div class="text">{{ line.text }}</div><!--
+              --></div>
+              </template>
+            </div>
           </div>
-        </polymer-ui-collapsible>
+        </template>
       </template>
     </div>
   </template>
