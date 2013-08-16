@@ -45,10 +45,12 @@
       border-radius: 5px;
     }
     .polymer-ui-collapsible-header {
+      cursor: pointer;
+    }
+    .patchsets .polymer-ui-collapsible-header {
       padding: 5px 10px;
       border-bottom: 1px solid #bcbcbc;
       border-radius: 5px;
-      cursor: pointer;
     }
     .description {
       white-space: pre-wrap;
@@ -79,24 +81,24 @@
       margin: 5px 0;
     }
     .message.approved {
-      border: 1px solid #8d8;
+      border-color: #8d8;
     }
     .message.disapproved {
-      border: 1px solid red;
+      border-color: red;
     }
-    .message .sender {
+    .message .header {
+      display: flex;
       background-color: #ccc;
       padding: 5px 10px;
     }
-    .message.approved .sender {
+    .message.approved .header {
       background-color: #dfd;
     }
-    .message.disapproved .sender {
+    .message.disapproved .header {
       background-color: #fdd;
     }
-    .message .date {
-      float: right;
-      padding: 5px 10px;
+    .message .sender {
+      flex: 1;
     }
     .message .text {
       padding: 10px;
@@ -150,11 +152,13 @@
         </polymer-ui-accordion>
         <div class="messages">
           <template repeat="{{ message in data.messages }}">
-            <div class="message {{ message.approval ? 'approved' : ''}} {{ message.disapproval ? 'disapproved' : '' }}">
-              <div class="date">{{ message.date }}</div>
-              <div class="sender">{{ message.sender }}</div>
+            <polymer-ui-collapsible active=true class="message {{ message.approval ? 'approved' : ''}} {{ message.disapproval ? 'disapproved' : '' }}">
+              <div class="polymer-ui-collapsible-header header">
+                <div class="sender">{{ message.sender }}</div>
+                <div class="date">{{ message.date }}</div>
+              </div>
               <div class="text">{{ message.text }}</div>
-            </div>
+            </polymer-ui-collapsible>
           </template>
         </div>
       </div>
