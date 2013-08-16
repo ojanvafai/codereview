@@ -12,12 +12,19 @@
             url="data/example.diff"
             on-polymer-response="diffLoadSucceeded">
         </polymer-ajax>
-        <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
+        <button on-click="toggleIt">bbb</button>
+        <rietveld-diffview id="diff2" diff="{{ diff }}" mode="unified"></rietveld-diffview>
       </template>
       <script>
       Polymer('rietveld-test-diffviewer', {
         diffLoadSucceeded: function(event) {
           this.diff = event.detail.response;
+        },
+        toggleIt: function() {
+          if (this.$.diff2.mode == 'unified')
+            this.$.diff2.mode = 'side-by-side';
+          else
+            this.$.diff2.mode = 'unified';
         }
       });
       </script>

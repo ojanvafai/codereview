@@ -111,6 +111,7 @@
             <polymer-ui-toggle-button onCaption="Closed" offCaption="Open" value="{{ data.closed }}"></polymer-ui-toggle-button>
             <polymer-ui-toggle-button onCaption="CQ+" offCaption="CQ-" value="{{ data.commit }}"></polymer-ui-toggle-button>
             <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
+            <polymer-ui-toggle-button onCaption="SxS" offCaption="Unified" value="{{ diffmode }}"></polymer-ui-toggle-button>
           </div>
           <div class="subject">{{ data.subject }}</div>
           <div class="owner">By <span class="name">{{ data.owner }}</span> &lt;<span class="email">{{ data.owner_email }}</span>&gt;</div>
@@ -128,7 +129,7 @@
             </div>
           </div>
         </div>
-        <polymer-ui-accordion multi>
+        <polymer-ui-accordion multi class="patchsets">
           <template repeat="{{ patchset in data.patchsets }}">
             <polymer-ajax
                 auto
@@ -140,8 +141,9 @@
           <template repeat="{{ changelist in changelists }}">
             <polymer-ui-collapsible>
               <div class="polymer-ui-collapsible-header">{{ changelist.message ? changelist.message : 'Patch' }}</div>
-              <div class="content">
-                <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ changelist.patchset }}"></rietveld-patchset>
+              <div class="content" on-tap="stopPropagation">
+                <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ changelist.patchset }}"
+                                   diffmode="{{ diffmode ? 'side-by-side' : 'unified' }}"></rietveld-patchset>
               </div>
             </polymer-ui-collapsible>
           </template>
@@ -167,6 +169,7 @@
   Polymer('rietveld-issue', {
     server: '',
     number: '',
+    diffmode: false,
     data: null,
     changelists: [],
     error: '',
@@ -188,10 +191,16 @@
       this.data = null;
       this.error = event.detail.response;
     },
+    // FIXME: We shouldn't need this hack, but Event#path isn't exposed by Chrome yet,
+    // which confuses Polymer. If you --enable-experimental-web-platform-features, then
+    // you don't need this hack.
+    stopPropagation: function(event) {
+      event.stopPropagation();
+    },
   });
   </script>
 </polymer-element>
-<polymer-element name="rietveld-patchset" attributes="server issue patchset">
+<polymer-element name="rietveld-patchset" attributes="server issue patchset diffmode">
   <template>
     <template if="{{ issue &amp;&amp; patchset }}">
       <polymer-ajax
@@ -202,7 +211,7 @@
       </polymer-ajax>
     </template>
     <template if="{{ diff }}">
-      <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
+      <rietveld-diffview diff="{{ diff }}" mode="{{ diffmode }}"></rietveld-diffview>
     </template>
   </template>
   <script>
@@ -210,6 +219,7 @@
     server: '',
     issue: '',
     patchset: '',
+    diffmode: 'unified',
     diff: null,
     diffLoadSucceeded: function(event) {
       this.diff = event.detail.response;
@@ -220,7 +230,7 @@
   });
   </script>
 </polymer-element>
-<polymer-element name="rietveld-diffview" attributes="diff">
+<polymer-element name="rietveld-diffview" attributes="diff mode">
   <template>
     <style>
     @host {
@@ -308,7 +318,6 @@
     }
     </style>
     <div id="diff" class="unified" on-webkitAnimationEnd="onAnimationEnd">
-      <button on-click="onToggle">Toggle</button>
       <template repeat="{{ file in data }}">
         <div class="name text">{{ file.name }}</div>
         <template repeat="{{ group in file.groups }}">
@@ -337,14 +346,24 @@
   Polymer('rietveld-diffview', {
     diff: null,
     data: null,
+    mode: 'unified',
+    animateFutureModeChanges: false,
 
     onAnimationEnd: function() {
       this.$.diff.classList.remove('animating');
     },
 
-    onToggle: function() {
-      this.$.diff.classList.toggle('unified');
-      this.$.diff.classList.add('animating');
+    modeChanged: function() {
+      var classList = this.$.diff.classList;
+
+      if (this.mode == 'side-by-side')
+        classList.remove('unified');
+      else
+        classList.add('unified');
+
+      if (this.animateFutureModeChanges)
+        classList.add('animating');
+      this.animateFutureModeChanges = true;
     },
 
     diffChanged: function() {
