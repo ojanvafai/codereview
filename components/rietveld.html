@@ -40,20 +40,24 @@
       font-family: 'Helvetica Neue', Helvetica, Arial, 'open sans', sans-serif;
     }
     polymer-ui-collapsible {
-      margin-bottom: 2px;
+      margin: 5px 0;
       border: 1px solid #ddd;
+      border-radius: 5px;
     }
     .polymer-ui-collapsible-header {
-      padding: 10px;
+      padding: 5px 10px;
       border-bottom: 1px solid #bcbcbc;
-      font-weight: bold;
+      border-radius: 5px;
       cursor: pointer;
     }
     .description {
       white-space: pre-wrap;
     }
+    .controls {
+      float: right;
+    }
     .metadata {
-      padding: 10px;
+      padding: 0 10px;
     }
     .subject{
       font-weight: bold;
@@ -70,7 +74,9 @@
       content: "CC: ";
     }
     .message {
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin: 5px 0;
     }
     .message.approved {
       border: 1px solid #8d8;
@@ -79,9 +85,8 @@
       border: 1px solid red;
     }
     .message .sender {
-      background-color: #f8f8ff;
-      padding: 10px;
-      font-style: italic;
+      background-color: #ccc;
+      padding: 5px 10px;
     }
     .message.approved .sender {
       background-color: #dfd;
@@ -91,8 +96,7 @@
     }
     .message .date {
       float: right;
-      padding: 10px;
-      font-style: italic;
+      padding: 5px 10px;
     }
     .message .text {
       padding: 10px;
@@ -103,6 +107,11 @@
     <template if="{{ data }}">
       <div class="issue">
         <div class="metadata">
+          <div class="controls">
+            <polymer-ui-toggle-button onCaption="Closed" offCaption="Open" value="{{ data.closed }}"></polymer-ui-toggle-button>
+            <polymer-ui-toggle-button onCaption="CQ+" offCaption="CQ-" value="{{ data.commit }}"></polymer-ui-toggle-button>
+            <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
+          </div>
           <div class="subject">{{ data.subject }}</div>
           <div class="owner">By <span class="name">{{ data.owner }}</span> &lt;<span class="email">{{ data.owner_email }}</span>&gt;</div>
           <div class="description">{{ data.description }}</div>
@@ -119,19 +128,24 @@
             </div>
           </div>
         </div>
-        <polymer-ui-accordion multi on-polymer-activate="onActivatePatchset">
+        <polymer-ui-accordion multi>
           <template repeat="{{ patchset in data.patchsets }}">
+            <polymer-ajax
+                auto
+                url="{{ server }}/api/{{ number }}/{{ patchset }}?comments=true"
+                handleAs="json"
+                on-polymer-response="patchsetLoadSucceeded">
+            </polymer-ajax>
+          </template>
+          <template repeat="{{ changelist in changelists }}">
             <polymer-ui-collapsible>
-              <div class="polymer-ui-collapsible-header">Patchset {{ patchset }}</div>
+              <div class="polymer-ui-collapsible-header">{{ changelist.message ? changelist.message : 'Patch' }}</div>
               <div class="content">
-                <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ patchset }}" active></rietveld-patchset>
+                <rietveld-patchset server="{{ server }}" issue="{{ number }}" patchset="{{ changelist.patchset }}"></rietveld-patchset>
               </div>
             </polymer-ui-collapsible>
           </template>
         </polymer-ui-accordion>
-        <polymer-ui-toggle-button onCaption="Closed" offCaption="Open" value="{{ data.closed }}"></polymer-ui-toggle-button>
-        <polymer-ui-toggle-button onCaption="CQ+" offCaption="CQ-" value="{{ data.commit }}"></polymer-ui-toggle-button>
-        <polymer-ui-toggle-button onCaption="Private" offCaption="Public" value="{{ data.private }}"></polymer-ui-toggle-button>
         <div class="messages">
           <template repeat="{{ message in data.messages }}">
             <div class="message {{ message.approval ? 'approved' : ''}} {{ message.disapproval ? 'disapproved' : '' }}">
@@ -154,13 +168,20 @@
     server: '',
     number: '',
     data: null,
+    changelists: [],
     error: '',
-    onActivatePatchset: function(event) {
-      // If we wanted to lazily fetch the patchsets, we could do that here.
-      // event.detail.item.querySelector('rietveld-patchset').active = true;
+    patchsetLoadSucceeded: function(event) {
+      var response = event.detail.response;
+      var index = this.data.patchsets.indexOf(response.patchset);
+      this.changelists[index] = response;
     },
     issueLoadSucceeded: function(event) {
-      this.data = event.detail.response;
+      var response = event.detail.response;
+      var changelists = [];
+      for (var i = 0; i < response.patchsets.length; ++i)
+        changelists.push({});
+      this.changelists = changelists;
+      this.data = response;
       this.error = '';
     },
     issueLoadFailed: function(event) {
@@ -170,14 +191,16 @@
   });
   </script>
 </polymer-element>
-<polymer-element name="rietveld-patchset" attributes="server issue patchset active">
+<polymer-element name="rietveld-patchset" attributes="server issue patchset">
   <template>
-    <polymer-ajax
-        url="{{ server }}/download/issue{{ issue }}_{{ patchset }}.diff"
-        id="ajax"
-        on-polymer-response="diffLoadSucceeded"
-        on-polymer-error="diffLoadFailed">
-    </polymer-ajax>
+    <template if="{{ issue &amp;&amp; patchset }}">
+      <polymer-ajax
+          url="{{ server }}/download/issue{{ issue }}_{{ patchset }}.diff"
+          auto
+          on-polymer-response="diffLoadSucceeded"
+          on-polymer-error="diffLoadFailed">
+      </polymer-ajax>
+    </template>
     <template if="{{ diff }}">
       <rietveld-diffview diff="{{ diff }}"></rietveld-diffview>
     </template>
@@ -188,9 +211,6 @@
     issue: '',
     patchset: '',
     diff: null,
-    activeChanged: function() {
-      this.$.ajax.auto = true;
-    },
     diffLoadSucceeded: function(event) {
       this.diff = event.detail.response;
     },
